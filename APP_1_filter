@@ -1,0 +1,21 @@
+clc;
+clear all;
+
+%set Fs
+Fs=1000;
+
+%get samples from the documents
+samples = [1,2*Fs];
+[y1] = audioread("330.wav",samples);
+[y2] = audioread("392.wav",samples);
+
+%tansform into Frequency domain
+x1=asind(y1);
+x2=asind(y2);
+Key=sin(x1)+sin(x2);
+spectrum=abs(fft(Key));
+
+%plot the spectrum
+grid on;
+plot(spectrum);
+title("Fourier Transform");
