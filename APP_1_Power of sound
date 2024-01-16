@@ -1,1 +1,27 @@
+>> %import audio signal
+>> [y_noisy,fs_noisy] = audioread('8accords.wav');
+>> 
+>> %calculate power of sound
+>> 
+>> %calculate the length of the file
+>> length_audio=size(y,1);
+Unrecognized function or variable 'y'.
+ 
+>> length_audio=size(y_noisy,1);
+>> %calculate the time of the fike
+>> time_audio = y_noisy / fs_noisy;
+>> time_audio = length_audio/fs_noisy;
+>> %power of the sound 
+>> power = sum(y_noisy.^2);
+>> %double check
+>> 
+>> %mean power of sound
+>> power_mean = power / time_audio;
+>> %double check of RMS
+>> power_mean_dc = rms('8accords.wav')^2;
+>> 
 
+ 
+>> plot(y_noisy,fs_noisy);
+>> plot(y_noisy);
+>> plot()
