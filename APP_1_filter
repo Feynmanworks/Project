@@ -19,3 +19,57 @@ spectrum=abs(fft(Key));
 grid on;
 plot(spectrum);
 title("Fourier Transform");
+-----------------------------------
+-----------------------------------
+a. audio read
+	[y,fs] = audioread(‘.wav’);
+	n = y;
+	t = n/fs;
+	plot(t, y);
+	xlabel(‘time’);
+	ylabel(‘amplitude’);
+	title(‘fs = ’fs);
+
+	%FFT
+	d=fft(y,fs);
+	subplot(2,2,1);
+plot(abs(d));
+	xlabel(‘frequency’);
+	ylabel(‘amplitude’);
+	
+	subplot(2,2,2);
+	plot(angle(d));
+	xlabel(‘frequency’);
+	ylabel(‘Phase Spectrum’);
+
+	b. power of sound 
+		p = sum(y^2);
+		p_mean = p / n;
+		p_check = rms(y)^2;
+
+	c. filter parameter  
+		% band-pass filter
+		center_frequency = 1000; %Hz
+		bandwidth = 500; %Hz
+
+		%normalization
+		center_frequency_nomalized = center_fenquency / (fs/2);
+		bandwidth_nomalized = bandwidth / (fs/2);
+	% The Nyquist frequency is named after Harry Nyquist, a Swedish-American engineer and physicist who made significant contributions to the understanding of communication systems. The concept is a key component of the Nyquist-Shannon sampling theorem.
+
+Mathematically, the Nyquist frequency is defined as:
+ 
+Where fs is the sampling rate. This equation states that the Nyquist frequency is half of the sampling rate. The Nyquist frequency is crucial because of the Nyquist-Shannon sampling theorem, which states that to accurately represent a signal, the sampling rate must be at least twice the highest frequency present in the signal. If the signal contains frequencies beyond the Nyquist frequency, aliasing can occur, leading to distortion and errors in the reconstructed signal.  In practical terms, when designing or analyzing digital signal processing systems, it's important to consider the Nyquist frequency to ensure that the sampling rate is appropriately chosen to avoid aliasing and accurately represent the desired signal bandwidth.
+
+	
+d. design filter
+	filter_order = 50; %the maximum power of polynomial
+	i=fir1(filter_order, [center_freq_ normalized – bandwidth_ normalized/2, center_freq_ normalized + bandwidth_ normalized/2], 'bandpass');
+	% fir1(N, Wn, type); N = order, Wn =  passband freq or bandstop freq
+
+	freqz(i, 1024,fs); %2^n, plotting the frequency response
+
+e. filter 
+	filtered_sound=filter(i , 1, y);
+	freqz(i , 1, 1024, fs);
+
