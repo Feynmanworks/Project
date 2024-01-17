@@ -1,1 +1,59 @@
+int p=0;
+int audio[]= ;
+int threshold = ;  //measured by micro sensor in silence and computed by Matlab
 
+for(int i=0; i<len; i++){
+    p += audio[i]*audio[i];
+}
+
+if (p > threshold){
+
+
+
+
+    // Temp Sensor
+      #define lm35 28
+      float value_temp=0.0;
+      
+      void setup() {
+        pinMode(lm35, INPUT);
+        Serial.begin(9600);
+        pinMode(RED_LED, OUTPUT);
+        pinMode(GREEN_LED, OUTPUT);
+        pinMode(BLUE_LED, OUTPUT);
+      }
+      
+      void loop() {
+        value_temp  = analogRead(lm35);
+        float tamp_F = ((value_temp*3.3)/4096.0)*100;
+        float tamp_C = (((value_temp*3.3)/4096.0)*100-32)/1.8;
+      
+        if (tamp_F > 100) {
+          digitalWrite(RED_LED, HIGH);
+          digitalWrite(GREEN_LED, LOW);
+          digitalWrite(BLUE_LED, LOW);
+        } 
+        if ( 20<= tamp_F <= 100) {
+          digitalWrite(RED_LED, LOW);
+          digitalWrite(GREEN_LED, HIGH);
+          digitalWrite(BLUE_LED, LOW);
+        } 
+        if( tamp_F < 20){
+          digitalWrite(RED_LED, LOW);
+          digitalWrite(GREEN_LED, LOW);
+          digitalWrite(BLUE_LED, HIGH);
+        }
+      
+        Serial.print("Tempetature is:  ");
+        Serial.print(tamp_F);
+        Serial.print("°F  ");
+        Serial.print(tamp_C);
+        Serial.println("°C  ");
+        delay(1000);
+      }
+
+
+
+
+    // display on the OLED
+}
