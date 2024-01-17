@@ -12,7 +12,7 @@ if (p > threshold){
 
 
     // Temp Sensor
-      #define lm35 28
+      #define lm35 28                  //
       float value_temp=0.0;
       
       void setup() {
@@ -53,6 +53,66 @@ if (p > threshold){
       }
 
 
+const int sampleWindow = 50;  // Sample window width in mS (50 mS = 20Hz)
+int const AMP_PIN = A1;       // Preamp output pin connected to A0
+unsigned int sample;
+
+void setup()
+{
+  pinMode(RED_LED, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(BLUE_LED, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  unsigned long startMillis = millis(); // Start of sample window
+  unsigned int peakToPeak = 0;   // peak-to-peak level
+
+  unsigned int signalMax = 0;
+  unsigned int signalMin = 4095;
+
+  // collect data for 50 mS and then plot data
+  while (millis() - startMillis < sampleWindow)
+  {
+    sample = analogRead(AMP_PIN);
+    if (sample < 4096)  // toss out spurious readings
+    {
+      if (sample > signalMax)
+      {
+        signalMax = sample;  // save just the max levels
+      }
+      else if (sample < signalMin)
+      {
+        signalMin = sample;  // save just the min levels
+      }
+    }
+     if (sample > 3500) {
+    digitalWrite(RED_LED, HIGH);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(BLUE_LED, LOW);
+  } else if (sample< 2000) {
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, HIGH);
+    digitalWrite(BLUE_LED, LOW);
+  } else {
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(BLUE_LED, HIGH);
+  }
+
+  }
+  peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
+  Serial.println("peakTopeak=");
+  Serial.println(peakToPeak);
+  Serial.println();
+  Serial.println("Volts=");
+  double volts = (peakToPeak * 3.3) / 4096;  // convert to volts
+  Serial.println(volts);
+  delay(500);
+}
+
 
 //-----------------------------------------------------------------------------
 //
@@ -68,7 +128,9 @@ if (p > threshold){
 //-----------------------------------------------------------------------------
 
 // ##TAG##4 deb
-#define		MICROPHONE_PIN	"????"
+#define	MICROPHONE_PIN	"????"                //define the pin number
+#define threshold  4.2140e-10		      //define the power of silence 
+
 
 // You must determine the power measured with no sound
 // this is the low level value in the below line
@@ -192,23 +254,24 @@ void Read_Samples(void)
 
 
 // ##TAG##3 deb
-float	Get_Soud_Power(void)
-//------------------------------------------------------------------------------
-//	Read signal and compute mean power
-//------------------------------------------------------------------------------
+int Get_Soud_Power()
 {
-	float power;
-	// add some local variables
-    
-	// call a function to read one buffer of samples
-	//
-	// center the signal : <signal> = <signal> - "????"
-	//
-	// compute mean power
-	//
-	//	power = ....
+	int power;
+	float Buffer_Sample_Center[SIZE_BUFF];
+	for(int i = 0; i < SIZE_BUFF; i++){
+		power += Buffer_sample[i] * Buffer_sample[i];
+	}
+	
+	flot power_mean = power / SIZE_BUFF;
+
+	// center the signal
+	
+	for(i = 0; i < SIZE_BUFF; i++){
+		float Buffer_Sample_Center[i] = Buffer_Sample [i] - power_mean; 
+	}
 	return power;
 }
+
 // ##TAG##3 end
 
 
