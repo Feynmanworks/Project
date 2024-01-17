@@ -1,279 +1,267 @@
-int p=0;
-int audio[]= ;
-int threshold = ;  //measured by micro sensor in silence and computed by Matlab
 
-for(int i=0; i<len; i++){
-    p += audio[i]*audio[i];
+#include "Arduino.h"
+#include <math.h>
+#include <Wire.h>
+
+// step 1 = macros
+#define SAMPLE_FREQ 4000
+#define SIZE_BUFF 1000
+#define SAMPLE_PERIOD (1000/4000)   //(1000/SAMPLE_FREQ)
+// step 4 = define microphone pin and threshould
+#define MICROPHONE_PIN  "????"                //define the pin number
+#define threshold  4.2140e-10         //define the power of silence 
+#define Pin_temp 28                   //pin number for temp sensor
+#define RED_LED 30                      
+#define GREEN_LED 39
+#define BLUE_LED 40
+#ifndef __MICS_VZ_89TE_H__
+#define __MICS_VZ_89TE_H__
+#define MICS_VZ_89TE_ADDR                0x70 //0x70 default I2C address
+//registers
+#define MICS_VZ_89TE_ADDR_CMD_GETSTATUS  0x0C  // This command is used to read the VZ89 status coded with 6 bytes:
+#define MICS_VZ_89TE_DATE_CODE           0x0D
+
+int Buffer_Sample[SIZE_BUFF];
+
+//step 2 = collecting data during a SAMPLE_PERIOD
+void Read_Samples(void)
+{
+  short num_sample, val_sample;   
+  unsigned long curtime, nextime;
+
+  nextime = micros() + SAMPLE_PERIOD;
+  num_sample = 0;
+  while (num_sample < SIZE_BUFF) {
+    do {
+      curtime = micros();
+    } while (curtime < nextime);
+    
+    val_sample = analogRead(MICROPHONE_PIN);    //define microphone Pin to read sound
+    Buffer_Sample[num_sample] = val_sample;   //array for sound
+    num_sample++;
+    
+    nextime += SAMPLE_PERIOD;
+  }
+  return ;
 }
 
-if (p > threshold){
+//step 3 = calculate the power of sound
+int Get_Soud_Power()
+{
+  int power = 0;
+  float Buffer_Sample_Center[SIZE_BUFF];
+  
+  for(int i = 0; i < SIZE_BUFF; i++){
+    power += Buffer_sample[i] * Buffer_sample[i];
+  }
+  
+  int power_mean = power / SIZE_BUFF;
+
+  
+  // center the signal
+  for(i = 0; i < SIZE_BUFF; i++){
+    float Buffer_Sample_Center[i] = Buffer_Sample [i] - power_mean; 
+  }
+  return power;
+}
+
+class MICS_VZ_89TE {
+      public:
+          MICS_VZ_89TE(void);
+          // To get the data
+          float getCO2(void);
+          float getVOC(void);
+          float getYear(void);
+          float getMonth(void);
+          float getDay(void);
+          float getRev(void);
+          float getCrc(void);
+          float getStatus(void);
+
+          float co2;
+          float voc;
+          float status;
+
+          float year;
+          float month;
+          float day;
+          float rev;
+          float crc;
+
+          void begin(uint8_t sdaPin, uint8_t sclPin);
+          void readSensor(void);
+          void getVersion(void);
+
+      private:
+          uint8_t _i2caddr;
+          void readData(byte reg, uint8_t data[]);
+      };
+
+      #endif
 
 
-
-
-    // Temp Sensor
-      #define lm35 28                  //
-      float value_temp=0.0;
-      
-      void setup() {
-        pinMode(lm35, INPUT);
-        Serial.begin(9600);
-        pinMode(RED_LED, OUTPUT);
-        pinMode(GREEN_LED, OUTPUT);
-        pinMode(BLUE_LED, OUTPUT);
+      MICS_VZ_89TE::MICS_VZ_89TE(void) {
+          _i2caddr = MICS_VZ_89TE_ADDR;
+          co2 = 0.0;
+          voc = 0.0;
       }
-      
-      void loop() {
-        value_temp  = analogRead(lm35);
-        float tamp_F = ((value_temp*3.3)/4096.0)*100;
-        float tamp_C = (((value_temp*3.3)/4096.0)*100-32)/1.8;
-      
-        if (tamp_F > 100) {
-          digitalWrite(RED_LED, HIGH);
-          digitalWrite(GREEN_LED, LOW);
-          digitalWrite(BLUE_LED, LOW);
-        } 
-        if ( 20<= tamp_F <= 100) {
-          digitalWrite(RED_LED, LOW);
-          digitalWrite(GREEN_LED, HIGH);
-          digitalWrite(BLUE_LED, LOW);
-        } 
-        if( tamp_F < 20){
-          digitalWrite(RED_LED, LOW);
-          digitalWrite(GREEN_LED, LOW);
-          digitalWrite(BLUE_LED, HIGH);
-        }
-      
-        Serial.print("Tempetature is:  ");
-        Serial.print(tamp_F);
-        Serial.print("°F  ");
-        Serial.print(tamp_C);
-        Serial.println("°C  ");
-        delay(1000);
+
+float MICS_VZ_89TE::getCO2(void) {
+          return co2;
       }
 
+float MICS_VZ_89TE::getVOC(void) {
+          return voc;
+      }
 
-const int sampleWindow = 50;  // Sample window width in mS (50 mS = 20Hz)
-int const AMP_PIN = A1;       // Preamp output pin connected to A0
-unsigned int sample;
+float MICS_VZ_89TE::getYear(void) {
+          return year;
+      }
+
+float MICS_VZ_89TE::getMonth(void) {
+          return month;
+      }
+
+float MICS_VZ_89TE::getDay(void) {
+          return day;
+      }
+
+float MICS_VZ_89TE::getRev(void) {
+          return rev;
+      }
+
+float MICS_VZ_89TE::getCrc(void) {
+          return crc;
+      }
+
+float MICS_VZ_89TE::getStatus(void) {
+          return status;
+}
+
+void MICS_VZ_89TE::readSensor(void) {
+          static uint8_t data[7];
+          readData(MICS_VZ_89TE_ADDR_CMD_GETSTATUS, data);
+
+          status = data[5];
+
+          co2 = (data[1] - 13) * (1600.0 / 229) + 400; // ppm: 400 .. 2000
+          voc = (data[0] - 13) * (1000.0 / 229);       // ppb: 0 .. 1000
+}
+
+void MICS_VZ_89TE::getVersion(void) {
+          static uint8_t data[7];
+          readData(MICS_VZ_89TE_DATE_CODE, data);
+
+          year = data[0];
+          month = data[1];
+          day = data[2];
+          rev = data[3];
+          crc = data[6];
+}
+
+void MICS_VZ_89TE::begin(uint8_t sdaPin, uint8_t sclPin) {
+          Wire.begin(sdaPin, sclPin);
+}
+
+void MICS_VZ_89TE::readData(byte reg, uint8_t data[]) {
+          uint8_t i = 0;
+          Wire.beginTransmission((uint8_t)_i2caddr);
+          Wire.write((uint8_t)reg); // This sends the command to get data
+          Wire.write(0x0);
+          Wire.write(0x0);
+          Wire.write(0x0);
+          Wire.write(0x0);
+          Wire.write(0x0);
+          Wire.endTransmission();
+
+          Wire.beginTransmission(0xE1);
+          Wire.endTransmission();
+
+          Wire.requestFrom((uint8_t)_i2caddr, (byte)7);
+          for (i = 0; i < 7; i++) {
+              data[i] = Wire.read();
+          }
+}
+
+
 
 void setup()
 {
+  // Serial port baud rate = 9600 bauds
+  Serial.begin(9600);
+  Serial1.begin(9600);              // initial bluetooth
+  // Initialize the sensor input as an analog input
+  pinMode(MICROPHONE_PIN, INPUT);   // define pin number of microphone to read
+  pinMode(Pin_temp, INPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BLUE_LED, OUTPUT);
-  Serial.begin(9600);
+
+  CO2SENSOR.begin(SDA, SCL); // Replace SDA and SCL with the actual pin numbers you are using
 }
 
+//main function
 void loop()
 {
-  unsigned long startMillis = millis(); // Start of sample window
-  unsigned int peakToPeak = 0;   // peak-to-peak level
+	int SoundPower;
+  SoundPower = Get_Soud_Power();
 
-  unsigned int signalMax = 0;
-  unsigned int signalMin = 4095;
+  //trigger, sound
+  if (SoundPower > threshold){
+    	Serial.println(" ");
+    	Serial.println("--- Power Sound ---");
+      Serial.print(" Power = ");    Serial.println(SoundPower);
 
-  // collect data for 50 mS and then plot data
-  while (millis() - startMillis < sampleWindow)
-  {
-    sample = analogRead(AMP_PIN);
-    if (sample < 4096)  // toss out spurious readings
-    {
-      if (sample > signalMax)
-      {
-        signalMax = sample;  // save just the max levels
+      Serial1.println(" ");
+      Serial1.println("--- Power Sound ---");
+      Serial1.print(" Power = ");    Serial1.println(SoundPower);
+
+      Serial.println(" ");
+      Serial.println("--- Temperature ---");
+      Serial.print(temp_F);Serial.print("°F  ");   Serial.print(temp_C);Serial.println("°C  ");
+
+      Serial1.println(" ");
+      Serial1.println("--- Temperature ---");
+      Serial1.print(temp_F);Serial.print("°F  ");   Serial1.print(temp_C);Serial1.println("°C  ");
+
+      Serial1.println(" ");
+      Serial1.println("--- CO2 ---");
+      Serial1.println(co2);
+
+      // Display on the OLED
+      DisplayString(0,5,SoundPower);            // writing on the 5th line
+      DisplayString(0,6,temp_C);
+      DisplayString(3,6,"°C");
+      DisplayString(0,7,co2);  // writing on the last line
+
+      //temp
+      value_temp  = analogRead(Pin_temp);
+      float value_temp = 0.0;
+      float tamp_F = ((value_temp*3.3)/4096.0)*100;
+      float tamp_C = (((value_temp*3.3)/4096.0)*100-32)/1.8;
+          
+      if (tamp_F > 100) {
+          digitalWrite(RED_LED, HIGH);
+          digitalWrite(GREEN_LED, LOW);
+          digitalWrite(BLUE_LED, LOW);
+      } 
+      if ( 20<= tamp_F <= 100) {
+          digitalWrite(RED_LED, LOW);
+          digitalWrite(GREEN_LED, HIGH);
+          digitalWrite(BLUE_LED, LOW);
+      } 
+      if( tamp_F < 20){
+          digitalWrite(RED_LED, LOW);
+          digitalWrite(GREEN_LED, LOW);
+          digitalWrite(BLUE_LED, HIGH);
       }
-      else if (sample < signalMin)
-      {
-        signalMin = sample;  // save just the min levels
-      }
-    }
-     if (sample > 3500) {
-    digitalWrite(RED_LED, HIGH);
-    digitalWrite(GREEN_LED, LOW);
-    digitalWrite(BLUE_LED, LOW);
-  } else if (sample< 2000) {
-    digitalWrite(RED_LED, LOW);
-    digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(BLUE_LED, LOW);
-  } else {
-    digitalWrite(RED_LED, LOW);
-    digitalWrite(GREEN_LED, LOW);
-    digitalWrite(BLUE_LED, HIGH);
+          
+    //CO2
+      CO2SENSOR.readSensor();
+      float co2 = CO2SENSOR.getCO2();
+      
+  	//wait 2 second
+      delay(2000);
   }
-
-  }
-  peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
-  Serial.println("peakTopeak=");
-  Serial.println(peakToPeak);
-  Serial.println();
-  Serial.println("Volts=");
-  double volts = (peakToPeak * 3.3) / 4096;  // convert to volts
-  Serial.println(volts);
-  delay(500);
 }
 
-
-//-----------------------------------------------------------------------------
-//
-// Power Measurement (Signal from microphone electret).
-//
-//  Read the comments and understand the program.
-//  Replace the “????” with a suitable value before running the program.
-// Step-1 : Goto ##TAG##1 and determine SAMPLE_FREQ and SIZE_BUFF
-// Step-2 : Goto ##TAG##2 read and understand the sampling function
-// Step-3 : Goto ##TAG##3 Translate your Matlab program to calculate the mean power
-// Step-4 : Goto ##TAG##4 Set the microphone pin and determine the LOW, MAX and AVR level
-// Step-5 : Goto ##TAG##5 Complete the main program loop()
-//-----------------------------------------------------------------------------
-
-// ##TAG##4 deb
-#define	MICROPHONE_PIN	"????"                //define the pin number
-#define threshold  4.2140e-10		      //define the power of silence 
-
-
-// You must determine the power measured with no sound
-// this is the low level value in the below line
-#define		LOW_LEVEL		"????"
-
-// You must determine the power measured with the maximum Sound
-#define		MAX_LEVEL		"????"
-
-// You have to choose the average acceptable value of power
-// It can be nn% of the MAX_LEVEL
-#define		AVR_LEVEL		"????"
-// ##TAG##4 end
-
-
-void setup()
-//-----------------------------------------------------
-// Initialization function 
-//-----------------------------------------------------
-{
-	// Serial port baud rate = 9600 bauds
-	Serial.begin(9600);
-	// Initialize the sensor input as an analog input
-	pinMode(MICROPHONE_PIN, INPUT);   // define pin number of microphone to read
-}
-
-
-float	Get_Soud_Power(void);
-
-
-// ##TAG##5 deb
-void loop()
-//-----------------------------------------------------
-// Main Fonction 
-//-----------------------------------------------------
-{
-	// Déclaration de variables
-	float SoundPower;		// puissance du Son
-
-	Serial.println(" ");
-	Serial.println("--- Sound Power Measurement ---");
-
-	// call the function.
-	SoundPower = Get_Soud_Power();
-
-	// Display the result
-	Serial.print(" Power = ");		Serial.println(SoundPower);
-	if (SoundPower < LOW_LEVEL) {
-		// Power is too low = no sound
-		// display an explicit message and turn on the white LED
-	}
-	else if (SoundPower > AVR_LEVEL) {
-		// Power is too high = sound is painful
-		// display an explicit message and turn on the red LED
-	}
-	else {
-		// acceptable power
-		// display an explicit message and turn on the green LED
-	}
-
-	// wait 2 second
-	delay(2000);
-}
-// ##TAG##5 end
-
-
-// ##TAG##1 deb
-// Define the sampling parameters
-//---------------------------------------------------------------
-//	Choose the sampling frequency (in KHz)
-//#define		SAMPLE_FREQ	4000		/* frequency between 4 and 8 KHz		*/
-//	Choose the size of samples buffer
-//#define		SIZE_BUFF	1000		/* value between 1000 and 4000	*/
-// ##TAG##1 end
-
-//	Sampling period in micro-secondes
-//#define		SAMPLE_PERIOD (1000/4000)  //(1000/SAMPLE_FREQ)
-//	Signal samples Buffer 
-//short	Buffer_Sample[SIZE_BUFF];
-
-// Buffer de la Puissance instantannée du signal en flottant
-//float	Power_Inst[SIZE_BUFF];
-
-
-
-
-
-
-
-// ##TAG##2 deb
-void Read_Samples(void)
-//------------------------------------------------------------------------------
-// No need to modify this function. Read and understand
-//------------------------------------------------------------------------------
-{
-	short num_sample, val_sample;		
-    unsigned long curtime, nextime;
-
-	// See help of 'micros()' function in Energia
-	// compute next sampling time (nextime)
-	nextime = micros() + SAMPLE_PERIOD;
-	num_sample = 0;
-	while (num_sample < SIZE_BUFF) {
-		// wait time of next sample (nextime)
-		do {
-			curtime = micros();
-		} while (curtime < nextime);
-		// read sample
-		val_sample = analogRead(MICROPHONE_PIN);  
-		Buffer_Sample[num_sample] = val_sample;
-		num_sample++;
-		// update next sample time
-		nextime += SAMPLE_PERIOD;
-	}
-	return;
-}
-// ##TAG##2 end
-
-
-
-
-
-
-// ##TAG##3 deb
-int Get_Soud_Power()
-{
-	int power;
-	float Buffer_Sample_Center[SIZE_BUFF];
-	for(int i = 0; i < SIZE_BUFF; i++){
-		power += Buffer_sample[i] * Buffer_sample[i];
-	}
-	
-	flot power_mean = power / SIZE_BUFF;
-
-	// center the signal
-	
-	for(i = 0; i < SIZE_BUFF; i++){
-		float Buffer_Sample_Center[i] = Buffer_Sample [i] - power_mean; 
-	}
-	return power;
-}
-
-// ##TAG##3 end
-
-
-    // display on the OLED
-}
