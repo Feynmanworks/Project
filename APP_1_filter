@@ -72,4 +72,24 @@ d. design filter
 e. filter 
 	filtered_sound=filter(i , 1, y);
 	freqz(i , 1, 1024, fs);
+----------------------------------------------
+----------------------------------------------
+c. Filter the sound ( 2nd order filter) : The frequencies you process will be less than 2500 kHz.
+Tips : 
+		Definition of 2nd order filter refers to type of filter whose frequency response is determined by a second-order polynomial equation. In signal processing and control system analysis, filter are commonly categorized by their order which indicates the highest power of the variable.
+				 
 
+		i. What are the possible filter schemes
+			The 2nd order filter can be classified into different types based on the coefficients and the behavior of the filter.
+1.	Butterworth Filter: Provides a maximally flat frequency response in the passband.
+2.	Chebyshev Type I: Provides a steeper roll-off in the stopband but with ripples in the passband.
+3.	Chebyshev Type II: Similar to type I but with ripples in the stopband instead of the passband. 
+
+ii. Use the parameters of the filter (s) that will be useful to you to determine the value of your schema components (analytically). 
+
+iii. Simulate filter using the TINA or Tspice 
+
+iv. Implement an analog filter and test it independently. 
+4. Connect the sound sensors to your board 
+a. Read the sensor with a sampling frequency of 10KHz and put the result in an array of 1000 cells. 
+b. Compute the power of your samples and check if it’s work by testing with different noise condition. Calibrate it with the decibel measure sensor.
