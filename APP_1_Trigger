@@ -20,6 +20,8 @@
 //registers
 #define MICS_VZ_89TE_ADDR_CMD_GETSTATUS  0x0C  // This command is used to read the VZ89 status coded with 6 bytes:
 #define MICS_VZ_89TE_DATE_CODE           0x0D
+#define SDA 8
+#define SCL 9
 
 int Buffer_Sample[SIZE_BUFF];
 
@@ -46,23 +48,23 @@ void Read_Samples(void)
 }
 
 //step 3 = calculate the power of sound
-int Get_Soud_Power()
+int Get_Sound_Power()
 {
-  int power = 0;
+  float power = 0;
   float Buffer_Sample_Center[SIZE_BUFF];
   
   for(int i = 0; i < SIZE_BUFF; i++){
     power += Buffer_sample[i] * Buffer_sample[i];
   }
   
-  int power_mean = power / SIZE_BUFF;
+  float power_mean = power / SIZE_BUFF;
 
   
   // center the signal
   for(i = 0; i < SIZE_BUFF; i++){
     float Buffer_Sample_Center[i] = Buffer_Sample [i] - power_mean; 
   }
-  return power;
+  return power_mean;
 }
 
 class MICS_VZ_89TE {
