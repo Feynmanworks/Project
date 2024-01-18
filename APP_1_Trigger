@@ -1,7 +1,7 @@
-
 #include "Arduino.h"
 #include <math.h>
 #include <Wire.h>
+#include "oled.h"
 
 // step 1 = macros
 #define SAMPLE_FREQ 4000
